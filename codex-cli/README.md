@@ -1,10 +1,10 @@
-<h1 align="center">OpenAI Codex CLI</h1>
+<h1 align="center">Burncloud Codex CLI</h1>
 <p align="center">Lightweight coding agent that runs in your terminal</p>
 
-<p align="center"><code>npm i -g @openai/codex</code></p>
+<p align="center"><code>npm install -g burncloud-codex</code></p>
 
 > [!IMPORTANT]
-> This is the documentation for the _legacy_ TypeScript implementation of the Codex CLI. It has been superseded by the _Rust_ implementation. See the [README in the root of the Codex repository](https://github.com/openai/codex/blob/main/README.md) for details.
+> This is a community-maintained fork of the Codex CLI, featuring enhanced error reporting and improved reliability. The tool provides an AI-powered coding assistant that runs directly in your terminal.
 
 ![Codex demo GIF using: codex "explain this codebase to me"](../.github/demo.gif)
 
@@ -77,16 +77,24 @@ Help us improve by filing issues or submitting PRs (see the section below for ho
 Install globally:
 
 ```shell
-npm install -g @openai/codex
+npm install -g burncloud-codex
 ```
 
-Next, set your OpenAI API key as an environment variable:
+First time setup - log in to Codex:
+
+```shell
+codex login
+```
+
+> **Note:** You'll need to set up API keys for your preferred AI provider. The tool supports multiple providers including OpenAI, Anthropic, Google, and many others. During login, you'll be guided through the setup process.
+
+Alternative setup - set your API key as an environment variable:
 
 ```shell
 export OPENAI_API_KEY="your-api-key-here"
 ```
 
-> **Note:** This command sets the key only for your current terminal session. You can add the `export` line to your shell's configuration file (e.g., `~/.zshrc`) but we recommend setting for the session. **Tip:** You can also place your API key into a `.env` file at the root of your project:
+> **Note:** This command sets the key only for your current terminal session. You can add the `export` line to your shell's configuration file (e.g., `~/.zshrc`) but we recommend using `codex login` for easier setup. **Tip:** You can also place your API key into a `.env` file at the root of your project:
 >
 > ```env
 > OPENAI_API_KEY=your-api-key-here
@@ -140,6 +148,55 @@ codex "explain this codebase to me"
 
 ```shell
 codex --approval-mode full-auto "create the fanciest todo-list app"
+```
+
+## Basic Usage Guide
+
+### First Run & Login
+After installation, the first thing you'll want to do is log in:
+
+```shell
+codex login
+```
+
+This will guide you through:
+1. **Provider Selection**: Choose your AI provider (OpenAI, Anthropic, Google, etc.)
+2. **API Key Setup**: Enter your API key for the selected provider
+3. **Model Configuration**: Select your preferred model (GPT-4, Claude, Gemini, etc.)
+
+### Common Commands
+
+```shell
+# Interactive mode - start a conversation
+codex
+
+# One-shot mode - run a single command
+codex "write a Python script to parse JSON files"
+
+# Specify approval mode
+codex --approval-mode full-auto "refactor this component"
+
+# Use a specific model
+codex --model gpt-4 "explain this algorithm"
+
+# Check current configuration
+codex --help
+
+# Update your settings
+codex login
+```
+
+### Getting Help
+
+```shell
+# Show all available commands and options
+codex --help
+
+# Check version
+codex --version
+
+# View current configuration
+codex config
 ```
 
 That's it - Codex will scaffold a file, run it inside a sandbox, install any
@@ -248,7 +305,7 @@ Run Codex head-less in pipelines. Example GitHub Action step:
 ```yaml
 - name: Update changelog via Codex
   run: |
-    npm install -g @openai/codex
+    npm install -g burncloud-codex
     export OPENAI_API_KEY="${{ secrets.OPENAI_KEY }}"
     codex -a auto-edit --quiet "update CHANGELOG for next release"
 ```
@@ -267,7 +324,7 @@ DEBUG=true codex
 
 ## Recipes
 
-Below are a few bite-size examples you can copy-paste. Replace the text in quotes with your own task. See the [prompting guide](https://github.com/openai/codex/blob/main/codex-cli/examples/prompting_guide.md) for more tips and usage patterns.
+Below are a few bite-size examples you can copy-paste. Replace the text in quotes with your own task. See the [prompting guide](https://github.com/burncloud/codex/blob/main/codex-cli/examples/prompting_guide.md) for more tips and usage patterns.
 
 | ✨  | What you type                                                                   | What happens                                                               |
 | --- | ------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
@@ -287,13 +344,13 @@ Below are a few bite-size examples you can copy-paste. Replace the text in quote
 <summary><strong>From npm (Recommended)</strong></summary>
 
 ```bash
-npm install -g @openai/codex
+npm install -g burncloud-codex
 # or
-yarn global add @openai/codex
+yarn global add burncloud-codex
 # or
-bun install -g @openai/codex
+bun install -g burncloud-codex
 # or
-pnpm add -g @openai/codex
+pnpm add -g burncloud-codex
 ```
 
 </details>
@@ -303,7 +360,7 @@ pnpm add -g @openai/codex
 
 ```bash
 # Clone the repository and navigate to the CLI package
-git clone https://github.com/openai/codex.git
+git clone https://github.com/burncloud/codex.git
 cd codex/codex-cli
 
 # Enable corepack
@@ -521,24 +578,25 @@ Not directly. It requires [Windows Subsystem for Linux (WSL2)](https://learn.mic
 
 ## Zero data retention (ZDR) usage
 
-Codex CLI **does** support OpenAI organizations with [Zero Data Retention (ZDR)](https://platform.openai.com/docs/guides/your-data#zero-data-retention) enabled. If your OpenAI organization has Zero Data Retention enabled and you still encounter errors such as:
+Codex CLI **does** support AI providers with Zero Data Retention (ZDR) enabled. If your AI provider organization has Zero Data Retention enabled and you still encounter errors such as:
 
 ```
 OpenAI rejected the request. Error details: Status: 400, Code: unsupported_parameter, Type: invalid_request_error, Message: 400 Previous response cannot be used for this organization due to Zero Data Retention.
 ```
 
-You may need to upgrade to a more recent version with: `npm i -g @openai/codex@latest`
+You may need to upgrade to a more recent version with: `npm i -g burncloud-codex@latest`
 
 ---
 
-## Codex open source fund
+## Community & Support
 
-We're excited to launch a **$1 million initiative** supporting open source projects that use Codex CLI and other OpenAI models.
+This is a community-maintained fork that aims to provide enhanced error reporting and improved reliability. We welcome contributions and feedback from the developer community!
 
-- Grants are awarded up to **$25,000** API credits.
-- Applications are reviewed **on a rolling basis**.
+- **Enhanced Error Messages**: Better debugging information for API failures
+- **Improved Reliability**: More robust error handling and retry mechanisms
+- **Community Driven**: Open source development with transparent processes
 
-**Interested? [Apply here](https://openai.com/form/codex-open-source-fund/).**
+**Interested in contributing?** Check out our [Contributing section](#contributing) below!
 
 ---
 
@@ -727,7 +785,7 @@ echo "use flake ../flake.nix#codex-rs" >> .envrc && direnv allow
 
 ## Security & responsible AI
 
-Have you discovered a vulnerability or have concerns about model output? Please e-mail **security@openai.com** and we will respond promptly.
+Have you discovered a vulnerability or have concerns about model output? Please [open an issue](https://github.com/burncloud/codex/issues) on our GitHub repository and we will respond promptly.
 
 ---
 

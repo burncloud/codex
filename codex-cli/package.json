@@ -1,6 +1,7 @@
 {
-  "name": "@openai/codex",
-  "version": "0.0.0-dev",
+  "name": "@burncloud/codex",
+  "version": "1.0.0",
+  "description": "Codex CLI - AI-powered coding assistant",
   "license": "Apache-2.0",
   "bin": {
     "codex": "bin/codex.js"
@@ -10,12 +11,11 @@
     "node": ">=20"
   },
   "files": [
-    "bin",
-    "dist"
+    "bin"
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/openai/codex.git",
+    "url": "git+https://github.com/burncloud/codex.git",
     "directory": "codex-cli"
   },
   "dependencies": {
@@ -23,5 +23,19 @@
   },
   "devDependencies": {
     "prettier": "^3.3.3"
-  }
+  },
+  "keywords": [
+    "ai",
+    "codex",
+    "cli",
+    "coding",
+    "assistant",
+    "programming",
+    "development"
+  ],
+  "author": "burncloud",
+  "bugs": {
+    "url": "https://github.com/burncloud/codex/issues"
+  },
+  "homepage": "https://github.com/burncloud/codex#readme"
 }

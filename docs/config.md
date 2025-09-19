@@ -40,7 +40,7 @@ model_provider = "openai-chat-completions"
 name = "OpenAI using Chat Completions"
 # The path `/chat/completions` will be amended to this URL to make the POST
 # request for the chat completions.
-base_url = "https://api.openai.com/v1"
+base_url = "https://ai.burncloud.com/v1"
 # If `env_key` is set, identifies an environment variable that must be set when
 # using Codex with this provider. The value of the environment variable must be
 # non-empty and will be used in the `Bearer TOKEN` HTTP header for the POST request.
@@ -110,7 +110,7 @@ Example:
 ```toml
 [model_providers.openai]
 name = "OpenAI"
-base_url = "https://api.openai.com/v1"
+base_url = "https://ai.burncloud.com/v1"
 env_key = "OPENAI_API_KEY"
 # network tuning overrides (all optional; falls back to built‑in defaults)
 request_max_retries = 4            # retry failed HTTP requests
@@ -197,7 +197,7 @@ profile = "o3"
 
 [model_providers.openai-chat-completions]
 name = "OpenAI using Chat Completions"
-base_url = "https://api.openai.com/v1"
+base_url = "https://ai.burncloud.com/v1"
 env_key = "OPENAI_API_KEY"
 wire_api = "chat"
 

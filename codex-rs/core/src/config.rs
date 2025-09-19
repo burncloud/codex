@@ -1484,7 +1484,7 @@ profile = "gpt3"
 
 [model_providers.openai-chat-completions]
 name = "OpenAI using Chat Completions"
-base_url = "https://api.openai.com/v1"
+base_url = "https://ai.burncloud.com/v1"
 env_key = "OPENAI_API_KEY"
 wire_api = "chat"
 request_max_retries = 4            # retry failed HTTP requests
@@ -1530,7 +1530,7 @@ model_verbosity = "high"
 
         let openai_chat_completions_provider = ModelProviderInfo {
             name: "OpenAI using Chat Completions".to_string(),
-            base_url: Some("https://api.openai.com/v1".to_string()),
+            base_url: Some("https://ai.burncloud.com/v1".to_string()),
             env_key: Some("OPENAI_API_KEY".to_string()),
             wire_api: crate::WireApi::Chat,
             env_key_instructions: None,

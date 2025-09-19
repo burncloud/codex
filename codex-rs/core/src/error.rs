@@ -90,8 +90,12 @@ pub enum CodexErr {
     InternalServerError,
 
     /// Retry limit exceeded.
-    #[error("exceeded retry limit, last status: {0}")]
-    RetryLimit(StatusCode),
+    #[error("exceeded retry limit, last status: {status} [URL: {url}]{}", if response_body.is_empty() { String::new() } else { format!(", response: {}", response_body) })]
+    RetryLimit {
+        status: StatusCode,
+        url: String,
+        response_body: String,
+    },
 
     /// Agent loop died unexpectedly
     #[error("internal error; agent loop died unexpectedly")]

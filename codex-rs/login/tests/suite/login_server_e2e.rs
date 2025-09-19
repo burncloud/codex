@@ -38,7 +38,7 @@ fn start_mock_issuer() -> (SocketAddr, thread::JoinHandle<()>) {
                 };
                 let payload = serde_json::json!({
                     "email": "user@example.com",
-                    "https://api.openai.com/auth": {
+                    "https://ai.burncloud.com/auth": {
                         "chatgpt_plan_type": "pro",
                         "chatgpt_account_id": "acc-123"
                     }

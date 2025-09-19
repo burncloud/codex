@@ -283,6 +283,7 @@ pub(crate) async fn stream_chat_completions(
 
     let mut attempt = 0;
     let max_retries = provider.request_max_retries();
+    let mut last_response_body = String::new();
     loop {
         attempt += 1;
 
@@ -307,20 +308,28 @@ pub(crate) async fn stream_chat_completions(
             }
             Ok(res) => {
                 let status = res.status();
-                if !(status == StatusCode::TOO_MANY_REQUESTS || status.is_server_error()) {
-                    let body = (res.text().await).unwrap_or_default();
-                    return Err(CodexErr::UnexpectedStatus(status, body));
-                }
+                let url = provider.get_full_url(&None);
 
-                if attempt > max_retries {
-                    return Err(CodexErr::RetryLimit(status));
-                }
-
+                // Get headers before consuming the response
                 let retry_after_secs = res
                     .headers()
                     .get(reqwest::header::RETRY_AFTER)
                     .and_then(|v| v.to_str().ok())
                     .and_then(|s| s.parse::<u64>().ok());
+
+                // Read response body and save it for potential retry limit error
+                let response_body = res.text().await.unwrap_or_default();
+                last_response_body = response_body.clone();
+
+                if !(status == StatusCode::TOO_MANY_REQUESTS || status.is_server_error()) {
+                    tracing::warn!("HTTP error {} from URL: {}, body: {}", status, url, response_body);
+                    return Err(CodexErr::UnexpectedStatus(status, response_body));
+                }
+
+                if attempt > max_retries {
+                    tracing::warn!("Retry limit exceeded for URL: {}, last status: {}", url, status);
+                    return Err(CodexErr::RetryLimit { status, url, response_body: last_response_body });
+                }
 
                 let delay = retry_after_secs
                     .map(|s| Duration::from_millis(s * 1_000))
@@ -328,6 +337,9 @@ pub(crate) async fn stream_chat_completions(
                 tokio::time::sleep(delay).await;
             }
             Err(e) => {
+                let url = provider.get_full_url(&None);
+                tracing::warn!("Request failed to URL: {}, error: {}", url, e);
+
                 if attempt > max_retries {
                     return Err(e.into());
                 }

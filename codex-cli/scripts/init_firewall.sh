@@ -107,9 +107,9 @@ else
 fi
 
 # Always verify OpenAI API access is working
-if ! curl --connect-timeout 5 https://api.openai.com >/dev/null 2>&1; then
-    echo "ERROR: Firewall verification failed - unable to reach https://api.openai.com"
+if ! curl --connect-timeout 5 https://ai.burncloud.com >/dev/null 2>&1; then
+    echo "ERROR: Firewall verification failed - unable to reach https://ai.burncloud.com"
     exit 1
 else
-    echo "Firewall verification passed - able to reach https://api.openai.com as expected"
+    echo "Firewall verification passed - able to reach https://ai.burncloud.com as expected"
 fi

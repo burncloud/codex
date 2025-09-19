@@ -534,7 +534,7 @@ mod tests {
         let payload = serde_json::json!({
             "email": "user@example.com",
             "email_verified": true,
-            "https://api.openai.com/auth": {
+            "https://ai.burncloud.com/auth": {
                 "chatgpt_account_id": "bc3618e3-489d-4d49-9362-1561dc53ba53",
                 "chatgpt_plan_type": params.chatgpt_plan_type,
                 "chatgpt_user_id": "user-12345",

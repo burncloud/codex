@@ -86,7 +86,7 @@ fn write_auth_json(
     let header = json!({ "alg": "none", "typ": "JWT" });
     let payload = json!({
         "email": "user@example.com",
-        "https://api.openai.com/auth": {
+        "https://ai.burncloud.com/auth": {
             "chatgpt_plan_type": chatgpt_plan_type,
             "chatgpt_account_id": account_id.unwrap_or("acc-123")
         }

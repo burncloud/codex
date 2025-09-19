@@ -4,6 +4,8 @@ node_modules
 .pnpm-store
 .pnpm-debug.log
 
+target2
+
 # Keep pnpm-lock.yaml
 !pnpm-lock.yaml
 

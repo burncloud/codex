@@ -225,6 +225,7 @@ impl ModelClient {
 
         let mut attempt = 0;
         let max_retries = self.provider.request_max_retries();
+        let mut last_response_body = String::new();
 
         loop {
             attempt += 1;
@@ -286,6 +287,10 @@ impl ModelClient {
                 }
                 Ok(res) => {
                     let status = res.status();
+                    let url = auth_manager.as_ref().and_then(|m| m.auth())
+                        .as_ref()
+                        .map(|auth| self.provider.get_full_url(&Some(auth.clone())))
+                        .unwrap_or_else(|| self.provider.get_full_url(&None));
 
                     // Pull out Retry‑After header if present.
                     let retry_after_secs = res
@@ -308,42 +313,51 @@ impl ModelClient {
                     // exact error message (e.g. "Unknown parameter: 'input[0].metadata'"). The body is
                     // small and this branch only runs on error paths so the extra allocation is
                     // negligible.
+
+                    // Read response body once and use it for all error handling
+                    let response_body = res.text().await.unwrap_or_default();
+                    last_response_body = response_body.clone();
+
                     if !(status == StatusCode::TOO_MANY_REQUESTS
                         || status == StatusCode::UNAUTHORIZED
                         || status.is_server_error())
                     {
-                        // Surface the error body to callers. Use `unwrap_or_default` per Clippy.
-                        let body = res.text().await.unwrap_or_default();
-                        return Err(CodexErr::UnexpectedStatus(status, body));
+                        // Surface the error body to callers.
+                        warn!("HTTP error {} from URL: {}, body: {}", status, url, response_body);
+                        return Err(CodexErr::UnexpectedStatus(status, response_body));
                     }
 
                     if status == StatusCode::TOO_MANY_REQUESTS {
-                        let body = res.json::<ErrorResponse>().await.ok();
-                        if let Some(ErrorResponse { error }) = body {
-                            if error.r#type.as_deref() == Some("usage_limit_reached") {
-                                // Prefer the plan_type provided in the error message if present
-                                // because it's more up to date than the one encoded in the auth
-                                // token.
-                                let plan_type = error
-                                    .plan_type
-                                    .or_else(|| auth.as_ref().and_then(|a| a.get_plan_type()));
-                                let resets_in_seconds = error.resets_in_seconds;
-                                return Err(CodexErr::UsageLimitReached(UsageLimitReachedError {
-                                    plan_type,
-                                    resets_in_seconds,
-                                }));
-                            } else if error.r#type.as_deref() == Some("usage_not_included") {
-                                return Err(CodexErr::UsageNotIncluded);
+                        // Parse the response body as JSON for rate limiting errors
+                        if !response_body.is_empty() {
+                            if let Ok(error_response) = serde_json::from_str::<ErrorResponse>(&response_body) {
+                                let error = error_response.error;
+                                if error.r#type.as_deref() == Some("usage_limit_reached") {
+                                    // Prefer the plan_type provided in the error message if present
+                                    // because it's more up to date than the one encoded in the auth
+                                    // token.
+                                    let plan_type = error
+                                        .plan_type
+                                        .or_else(|| auth.as_ref().and_then(|a| a.get_plan_type()));
+                                    let resets_in_seconds = error.resets_in_seconds;
+                                    return Err(CodexErr::UsageLimitReached(UsageLimitReachedError {
+                                        plan_type,
+                                        resets_in_seconds,
+                                    }));
+                                } else if error.r#type.as_deref() == Some("usage_not_included") {
+                                    return Err(CodexErr::UsageNotIncluded);
+                                }
                             }
                         }
                     }
 
                     if attempt > max_retries {
+                        warn!("Retry limit exceeded for URL: {}, last status: {}", url, status);
                         if status == StatusCode::INTERNAL_SERVER_ERROR {
                             return Err(CodexErr::InternalServerError);
                         }
 
-                        return Err(CodexErr::RetryLimit(status));
+                        return Err(CodexErr::RetryLimit { status, url, response_body: last_response_body });
                     }
 
                     let delay = retry_after_secs
@@ -352,6 +366,13 @@ impl ModelClient {
                     tokio::time::sleep(delay).await;
                 }
                 Err(e) => {
+                    // Log the URL that failed for debugging
+                    let url = auth_manager.as_ref().and_then(|m| m.auth())
+                        .as_ref()
+                        .map(|auth| self.provider.get_full_url(&Some(auth.clone())))
+                        .unwrap_or_else(|| self.provider.get_full_url(&None));
+                    warn!("Request failed to URL: {}, error: {}", url, e);
+
                     if attempt > max_retries {
                         return Err(e.into());
                     }

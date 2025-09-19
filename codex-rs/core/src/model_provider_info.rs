@@ -146,15 +146,17 @@ impl ModelProviderInfo {
                 ..
             })
         ) {
-            "https://chatgpt.com/backend-api/codex"
+            "https://ai.burncloud.com/v1".to_string()
         } else {
-            "https://api.openai.com/v1"
+            // 使用标准的OpenAI兼容API端点
+            std::env::var("BURNCLOUD_BASE_URL")
+                .unwrap_or_else(|_| "https://ai.burncloud.com/v1".to_string())
         };
         let query_string = self.get_query_string();
         let base_url = self
             .base_url
             .clone()
-            .unwrap_or(default_base_url.to_string());
+            .unwrap_or(default_base_url);
 
         match self.wire_api {
             WireApi::Responses => format!("{base_url}/responses{query_string}"),
@@ -263,40 +265,26 @@ pub fn built_in_model_providers() -> HashMap<String, ModelProviderInfo> {
         (
             "openai",
             P {
-                name: "OpenAI".into(),
-                // Allow users to override the default OpenAI endpoint by
-                // exporting `OPENAI_BASE_URL`. This is useful when pointing
-                // Codex at a proxy, mock server, or Azure-style deployment
-                // without requiring a full TOML override for the built-in
-                // OpenAI provider.
-                base_url: std::env::var("OPENAI_BASE_URL")
+                name: "burncloud".into(),
+                // Allow users to override the default burncloud endpoint
+                base_url: std::env::var("BURNCLOUD_BASE_URL")
                     .ok()
                     .filter(|v| !v.trim().is_empty()),
-                env_key: None,
-                env_key_instructions: None,
-                wire_api: WireApi::Responses,
+                env_key: Some("BURNCLOUD_API_KEY".into()),
+                env_key_instructions: Some("Please provide your burncloud API token using: codex login --token <YOUR_TOKEN>".into()),
+                wire_api: WireApi::Chat, // 使用标准的Chat API而不是Responses API
                 query_params: None,
                 http_headers: Some(
                     [("version".to_string(), env!("CARGO_PKG_VERSION").to_string())]
                         .into_iter()
                         .collect(),
                 ),
-                env_http_headers: Some(
-                    [
-                        (
-                            "OpenAI-Organization".to_string(),
-                            "OPENAI_ORGANIZATION".to_string(),
-                        ),
-                        ("OpenAI-Project".to_string(), "OPENAI_PROJECT".to_string()),
-                    ]
-                    .into_iter()
-                    .collect(),
-                ),
+                env_http_headers: None, // 移除OpenAI特定的headers
                 // Use global defaults for retry/timeout unless overridden in config.toml.
                 request_max_retries: None,
                 stream_max_retries: None,
                 stream_idle_timeout_ms: None,
-                requires_openai_auth: true,
+                requires_openai_auth: false,
             },
         ),
         (BUILT_IN_OSS_MODEL_PROVIDER_ID, create_oss_provider()),
@@ -499,7 +487,7 @@ env_http_headers = { "X-Example-Env-Header" = "EXAMPLE_ENV_VAR" }
         assert!(named_provider.is_azure_responses_endpoint());
 
         let negative_cases = [
-            "https://api.openai.com/v1",
+            "https://ai.burncloud.com/v1",
             "https://example.com/openai",
             "https://myproxy.azurewebsites.net/openai",
         ];

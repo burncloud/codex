@@ -118,11 +118,13 @@ impl ModelClient {
             WireApi::Responses => self.stream_responses(prompt).await,
             WireApi::Chat => {
                 // Create the raw streaming connection first.
+                let auth = self.auth_manager.as_ref().and_then(|m| m.auth());
                 let response_stream = stream_chat_completions(
                     prompt,
                     &self.config.model_family,
                     &self.client,
                     &self.provider,
+                    &auth,
                 )
                 .await?;
 
@@ -287,7 +289,9 @@ impl ModelClient {
                 }
                 Ok(res) => {
                     let status = res.status();
-                    let url = auth_manager.as_ref().and_then(|m| m.auth())
+                    let url = auth_manager
+                        .as_ref()
+                        .and_then(|m| m.auth())
                         .as_ref()
                         .map(|auth| self.provider.get_full_url(&Some(auth.clone())))
                         .unwrap_or_else(|| self.provider.get_full_url(&None));
@@ -323,14 +327,19 @@ impl ModelClient {
                         || status.is_server_error())
                     {
                         // Surface the error body to callers.
-                        warn!("HTTP error {} from URL: {}, body: {}", status, url, response_body);
+                        warn!(
+                            "HTTP error {} from URL: {}, body: {}",
+                            status, url, response_body
+                        );
                         return Err(CodexErr::UnexpectedStatus(status, response_body));
                     }
 
                     if status == StatusCode::TOO_MANY_REQUESTS {
                         // Parse the response body as JSON for rate limiting errors
                         if !response_body.is_empty() {
-                            if let Ok(error_response) = serde_json::from_str::<ErrorResponse>(&response_body) {
+                            if let Ok(error_response) =
+                                serde_json::from_str::<ErrorResponse>(&response_body)
+                            {
                                 let error = error_response.error;
                                 if error.r#type.as_deref() == Some("usage_limit_reached") {
                                     // Prefer the plan_type provided in the error message if present
@@ -340,10 +349,12 @@ impl ModelClient {
                                         .plan_type
                                         .or_else(|| auth.as_ref().and_then(|a| a.get_plan_type()));
                                     let resets_in_seconds = error.resets_in_seconds;
-                                    return Err(CodexErr::UsageLimitReached(UsageLimitReachedError {
-                                        plan_type,
-                                        resets_in_seconds,
-                                    }));
+                                    return Err(CodexErr::UsageLimitReached(
+                                        UsageLimitReachedError {
+                                            plan_type,
+                                            resets_in_seconds,
+                                        },
+                                    ));
                                 } else if error.r#type.as_deref() == Some("usage_not_included") {
                                     return Err(CodexErr::UsageNotIncluded);
                                 }
@@ -352,12 +363,19 @@ impl ModelClient {
                     }
 
                     if attempt > max_retries {
-                        warn!("Retry limit exceeded for URL: {}, last status: {}", url, status);
+                        warn!(
+                            "Retry limit exceeded for URL: {}, last status: {}",
+                            url, status
+                        );
                         if status == StatusCode::INTERNAL_SERVER_ERROR {
                             return Err(CodexErr::InternalServerError);
                         }
 
-                        return Err(CodexErr::RetryLimit { status, url, response_body: last_response_body });
+                        return Err(CodexErr::RetryLimit {
+                            status,
+                            url,
+                            response_body: last_response_body,
+                        });
                     }
 
                     let delay = retry_after_secs
@@ -367,7 +385,9 @@ impl ModelClient {
                 }
                 Err(e) => {
                     // Log the URL that failed for debugging
-                    let url = auth_manager.as_ref().and_then(|m| m.auth())
+                    let url = auth_manager
+                        .as_ref()
+                        .and_then(|m| m.auth())
                         .as_ref()
                         .map(|auth| self.provider.get_full_url(&Some(auth.clone())))
                         .unwrap_or_else(|| self.provider.get_full_url(&None));

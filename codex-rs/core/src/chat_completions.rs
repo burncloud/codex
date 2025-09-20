@@ -15,6 +15,7 @@ use tokio::time::timeout;
 use tracing::debug;
 use tracing::trace;
 
+use crate::CodexAuth;
 use crate::ModelProviderInfo;
 use crate::client_common::Prompt;
 use crate::client_common::ResponseEvent;
@@ -34,6 +35,7 @@ pub(crate) async fn stream_chat_completions(
     model_family: &ModelFamily,
     client: &reqwest::Client,
     provider: &ModelProviderInfo,
+    auth: &Option<CodexAuth>,
 ) -> Result<ResponseStream> {
     // Build messages array
     let mut messages = Vec::<serde_json::Value>::new();
@@ -275,9 +277,10 @@ pub(crate) async fn stream_chat_completions(
         "tools": tools_json,
     });
 
+    let debug_url = provider.get_full_url(auth);
     debug!(
         "POST to {}: {}",
-        provider.get_full_url(&None),
+        debug_url,
         serde_json::to_string_pretty(&payload).unwrap_or_default()
     );
 
@@ -287,7 +290,7 @@ pub(crate) async fn stream_chat_completions(
     loop {
         attempt += 1;
 
-        let req_builder = provider.create_request_builder(client, &None).await?;
+        let req_builder = provider.create_request_builder(client, auth).await?;
 
         let res = req_builder
             .header(reqwest::header::ACCEPT, "text/event-stream")
@@ -308,7 +311,7 @@ pub(crate) async fn stream_chat_completions(
             }
             Ok(res) => {
                 let status = res.status();
-                let url = provider.get_full_url(&None);
+                let url = provider.get_full_url(auth);
 
                 // Get headers before consuming the response
                 let retry_after_secs = res
@@ -322,13 +325,26 @@ pub(crate) async fn stream_chat_completions(
                 last_response_body = response_body.clone();
 
                 if !(status == StatusCode::TOO_MANY_REQUESTS || status.is_server_error()) {
-                    tracing::warn!("HTTP error {} from URL: {}, body: {}", status, url, response_body);
+                    tracing::warn!(
+                        "HTTP error {} from URL: {}, body: {}",
+                        status,
+                        url,
+                        response_body
+                    );
                     return Err(CodexErr::UnexpectedStatus(status, response_body));
                 }
 
                 if attempt > max_retries {
-                    tracing::warn!("Retry limit exceeded for URL: {}, last status: {}", url, status);
-                    return Err(CodexErr::RetryLimit { status, url, response_body: last_response_body });
+                    tracing::warn!(
+                        "Retry limit exceeded for URL: {}, last status: {}",
+                        url,
+                        status
+                    );
+                    return Err(CodexErr::RetryLimit {
+                        status,
+                        url,
+                        response_body: last_response_body,
+                    });
                 }
 
                 let delay = retry_after_secs
@@ -337,7 +353,7 @@ pub(crate) async fn stream_chat_completions(
                 tokio::time::sleep(delay).await;
             }
             Err(e) => {
-                let url = provider.get_full_url(&None);
+                let url = provider.get_full_url(auth);
                 tracing::warn!("Request failed to URL: {}, error: {}", url, e);
 
                 if attempt > max_retries {

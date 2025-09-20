@@ -153,10 +153,7 @@ impl ModelProviderInfo {
                 .unwrap_or_else(|_| "https://ai.burncloud.com/v1".to_string())
         };
         let query_string = self.get_query_string();
-        let base_url = self
-            .base_url
-            .clone()
-            .unwrap_or(default_base_url);
+        let base_url = self.base_url.clone().unwrap_or(default_base_url);
 
         match self.wire_api {
             WireApi::Responses => format!("{base_url}/responses{query_string}"),
@@ -270,8 +267,8 @@ pub fn built_in_model_providers() -> HashMap<String, ModelProviderInfo> {
                 base_url: std::env::var("BURNCLOUD_BASE_URL")
                     .ok()
                     .filter(|v| !v.trim().is_empty()),
-                env_key: Some("BURNCLOUD_API_KEY".into()),
-                env_key_instructions: Some("Please provide your burncloud API token using: codex login --token <YOUR_TOKEN>".into()),
+                env_key: None,
+                env_key_instructions: None,
                 wire_api: WireApi::Chat, // 使用标准的Chat API而不是Responses API
                 query_params: None,
                 http_headers: Some(

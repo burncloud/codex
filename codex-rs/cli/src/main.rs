@@ -230,7 +230,6 @@ async fn cli_main(codex_linux_sandbox_exe: Option<PathBuf>) -> anyhow::Result<()
                         // 提示用户输入burncloud token
                         println!("Please provide your burncloud API token:");
                         println!("Usage: codex login --token <YOUR_TOKEN>");
-                        println!("Or set BURNCLOUD_API_KEY environment variable");
                         std::process::exit(1);
                     }
                 }

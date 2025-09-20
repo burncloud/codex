@@ -1,5 +1,13 @@
 # Authentication
 
+## Using a burncloud API token
+
+You can authenticate using a burncloud API token:
+
+```shell
+codex login --token "your-burncloud-token-here"
+```
+
 ## Usage-based billing alternative: Use an OpenAI API key
 
 If you prefer to pay-as-you-go, you can still authenticate with your OpenAI API key:
